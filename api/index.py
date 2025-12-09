@@ -27,7 +27,6 @@ client = OpenAI(
     base_url="https://api.llmod.ai/v1"
 )
 
-# Pinecone initialization (Safe check)
 if api_key_pinecone:
     pc = Pinecone(api_key=api_key_pinecone)
     index = pc.Index(INDEX_NAME)
@@ -66,7 +65,7 @@ class StatsResponse(BaseModel):
     top_k: int
 
 # ---------------------------------------------------------
-# 5. UI (HTML/JS) - The User Interface
+# 5. UI (HTML/JS)
 # ---------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 def read_root():
@@ -166,7 +165,6 @@ def read_root():
 
             function toggleSection(id) {
                 const el = document.getElementById(id);
-                // Toggle display
                 if (el.style.display === 'block') {
                     el.style.display = 'none';
                 } else {
@@ -178,7 +176,6 @@ def read_root():
                 const question = document.getElementById('questionInput').value;
                 if (!question) return;
 
-                // UI Loading State
                 document.getElementById('submitBtn').disabled = true;
                 document.getElementById('loader').style.display = 'block';
                 document.getElementById('results').style.display = 'none';
@@ -190,21 +187,19 @@ def read_root():
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ question: question })
                     });
-
+                    
                     if (!response.ok) {
-                        throw new Error(`Server Error: ${response.status}`);
+                         const errData = await response.json();
+                         throw new Error(errData.detail || 'Server Error');
                     }
 
                     const data = await response.json();
 
-                    // 1. Render Answer
-                    // Convert newlines to <br> for better reading
                     document.getElementById('answerDisplay').innerHTML = data.response.replace(/\\n/g, '<br>');
 
-                    // 2. Render Context chunks
                     const chunksList = document.getElementById('chunksList');
                     chunksList.innerHTML = '';
-                    if (data.context.length === 0) {
+                    if (!data.context || data.context.length === 0) {
                          chunksList.innerHTML = '<p>No relevant context found.</p>';
                     } else {
                         data.context.forEach(ctx => {
@@ -222,11 +217,9 @@ def read_root():
                         });
                     }
 
-                    // 3. Render Debug Prompts
                     document.getElementById('systemPromptDisplay').innerText = data.Augmented_prompt.System;
                     document.getElementById('userPromptDisplay').innerText = data.Augmented_prompt.User;
 
-                    // Show Results
                     document.getElementById('results').style.display = 'block';
 
                 } catch (error) {
@@ -241,10 +234,6 @@ def read_root():
     </body>
     </html>
     """
-
-# ---------------------------------------------------------
-# 6. API Endpoints
-# ---------------------------------------------------------
 
 @app.get("/api/stats", response_model=StatsResponse)
 def stats_endpoint():
@@ -317,7 +306,7 @@ Context:
 Question: {question}
 Answer:"""
 
-    # E. Generate
+    # E. Generate (WITH FIX FOR NONE RESPONSE)
     try:
         response = client.chat.completions.create(
             model="RPRTHPB-gpt-5-mini",
@@ -327,7 +316,11 @@ Answer:"""
             ],
             temperature=1 
         )
-        answer = response.choices[0].message.content
+        # --- תיקון הקריסה ---
+        # אם המודל מחזיר None, נשתמש במחרוזת ריקה או הודעת שגיאה
+        content = response.choices[0].message.content
+        answer = content if content is not None else "Error: The model returned an empty response. Please try again."
+        
     except Exception as e:
         answer = f"Error generating response: {str(e)}"
 
