@@ -44,14 +44,14 @@ The system is built on a modern ETL (Extract, Transform, Load) and Retrieval pip
 ```mermaid
 graph TD
     A[Raw TED CSV Dataset] -->|Clean & Process| B(Text Chunking)
-    B -->|Tiktoken 512t/20%| C{Embedding Model}
+    B --> C{Embedding Model}
     C -->|text-embedding-3-small| D[(Pinecone Vector DB)]
     
     User[User Question] -->|Embed Query| E(Vector Search)
     E -->|Top-k Similarity| D
     D -->|Retrieve Context + Metadata| F[LLM Construction]
     F -->|System Prompt + Context| G[GPT-5-mini]
-    G -->|Final Answer| User
+    G --> Output[Final Answer]
 ````
 
 ### 🧰 Tech Stack
