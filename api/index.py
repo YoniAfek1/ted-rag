@@ -14,8 +14,8 @@ EMBEDDING_MODEL = "RPRTHPB-text-embedding-3-small"
 EMBEDDING_DIMENSIONS = 1536
 
 # RAG Parameters - Optimized for Narrative/Talks
-TOP_K = 8                  # שליפת 8 צ'אנקים (כ-4000 טוקנים של הקשר)
-MAX_CHUNK_SIZE = 512       # תואם למה שהוגדר ב-Ingestion
+TOP_K = 8
+MAX_CHUNK_SIZE = 512
 OVERLAP_RATIO = 0.2
 
 # ---------------------------------------------------------
@@ -52,7 +52,7 @@ class QueryRequest(BaseModel):
 class ContextItem(BaseModel):
     talk_id: str
     title: str
-    text: str              # הטקסט של הצ'אנק
+    text: str
     score: float
     url: Optional[str] = None
     speaker: Optional[str] = None
