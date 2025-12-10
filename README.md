@@ -16,6 +16,12 @@ Experience the assistant in action:
 
 ---
 
+<p align="center">
+  <img width="600" src="https://github.com/user-attachments/assets/e9fec509-76eb-4ead-9532-f1f1cc898cd9" alt="TED Koala">
+</p>
+
+---
+
 ## 📖 About The Project
 
 This project implements a robust **Retrieval-Augmented Generation (RAG)** system designed to navigate a massive dataset of TED Talk transcripts. unlike simple keyword search, this assistant understands semantic intent, allowing users to ask complex questions and receive grounded, evidence-based answers.
