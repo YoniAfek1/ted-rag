@@ -13,7 +13,7 @@ INDEX_NAME = "ted-rag-index"
 EMBEDDING_MODEL = "RPRTHPB-text-embedding-3-small"
 EMBEDDING_DIMENSIONS = 1536
 
-# RAG Parameters - Optimized for Narrative/Talks
+# RAG Parameters
 TOP_K = 8
 MAX_CHUNK_SIZE = 512
 OVERLAP_RATIO = 0.2
@@ -44,7 +44,7 @@ else:
 app = FastAPI(title="TED RAG Assistant")
 
 # ---------------------------------------------------------
-# 4. Data Models (Updated with new metadata fields)
+# 4. Data Models
 # ---------------------------------------------------------
 class QueryRequest(BaseModel):
     question: str
@@ -109,6 +109,13 @@ def read_root():
             
             .answer-box { background-color: #f8fff9; border-left: 5px solid #28a745; padding: 20px; border-radius: 4px; font-size: 1.1em; line-height: 1.6; color: #2c3e50; margin-bottom: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
             
+            /* --- Video Section Styles --- */
+            .video-section { margin-top: 25px; padding-top: 20px; border-top: 2px dashed #e1e1e1; }
+            .video-header { font-weight: bold; color: #e62b1e; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+            .video-wrapper { position: relative; padding-bottom: 56.25%; /* 16:9 */ height: 0; overflow: hidden; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: #000; }
+            .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+
+            /* Metadata Styles */
             .metadata-container { border: 1px solid #eee; border-radius: 6px; overflow: hidden; margin-top: 20px; }
             .metadata-header { background: #f9f9f9; padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 0.9em; color: #555; }
             .metadata-header:hover { background: #f0f0f0; }
@@ -194,10 +201,43 @@ def read_root():
                     
                     const data = await response.json();
                     
-                    // Display Answer
-                    document.getElementById('answerDisplay').innerHTML = data.response.replace(/\\n/g, '<br>');
+                    // 1. Display Text Answer
+                    let answerHTML = data.response.replace(/\\n/g, '<br>');
 
-                    // Display Chunks with new metadata
+                    // 2. Video Embedding Logic (New!)
+                    // We check if we have context, take the first one, and format the URL for embedding.
+                    if (data.context && data.context.length > 0 && data.context[0].url) {
+                        const topMatch = data.context[0];
+                        let videoUrl = topMatch.url;
+                        
+                        // Convert standard TED URL to Embed URL
+                        // Standard: https://www.ted.com/talks/slug
+                        // Embed: https://embed.ted.com/talks/slug
+                        if (videoUrl.includes("ted.com/talks")) {
+                            videoUrl = videoUrl.replace("www.ted.com", "embed.ted.com");
+                            // Fallback if URL doesn't have www but has ted.com
+                            if (!videoUrl.includes("embed.ted.com")) {
+                                videoUrl = videoUrl.replace("ted.com", "embed.ted.com");
+                            }
+                        }
+
+                        // Append Video Section to the answer box
+                        answerHTML += `
+                            <div class="video-section">
+                                <div class="video-header">
+                                    <span>🎬 Watch Top Result:</span>
+                                    <a href="${topMatch.url}" target="_blank" style="font-size:0.9em;">(Open in TED)</a>
+                                </div>
+                                <div class="video-wrapper">
+                                    <iframe src="${videoUrl}" allowfullscreen scrolling="no"></iframe>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    document.getElementById('answerDisplay').innerHTML = answerHTML;
+
+                    // 3. Display Metadata Chunks
                     const chunksList = document.getElementById('chunksList');
                     chunksList.innerHTML = '';
                     
@@ -208,7 +248,6 @@ def read_root():
                             const div = document.createElement('div');
                             div.className = 'chunk-card';
                             
-                            // Safe handling of optional fields
                             const link = ctx.url ? `<a href="${ctx.url}" target="_blank">${ctx.title}</a>` : ctx.title;
                             const speaker = ctx.speaker ? `🗣️ ${ctx.speaker}` : '';
                             const views = ctx.views ? `👁️ ${ctx.views.toLocaleString()} views` : '';
@@ -287,11 +326,10 @@ def prompt_endpoint(request: QueryRequest):
         if not match.metadata: continue
         meta = match.metadata
         
-        # 1. Extract Text (using the 'chunk_text' key from ingestion)
-        # We also add a fallback just in case old data exists
+        # 1. Extract Text
         chunk_content = str(meta.get('chunk_text', ''))
         if not chunk_content:
-            chunk_content = str(meta.get('chunk', '')) # Fallback for old index data
+            chunk_content = str(meta.get('chunk', '')) # Fallback
 
         # 2. Extract Metadata
         t_id = str(meta.get('talk_id', 'Unknown'))
@@ -307,7 +345,7 @@ def prompt_endpoint(request: QueryRequest):
         except:
             views = 0
 
-        # 3. Build Rich Context String for LLM
+        # 3. Build Rich Context String
         context_text += f"""
 ### Source Document
 Title: {title}
@@ -322,7 +360,7 @@ Content: {chunk_content}
         retrieved_chunks.append({
             "talk_id": t_id,
             "title": title,
-            "text": chunk_content,  # Mapped to 'text' field in Pydantic model
+            "text": chunk_content,
             "score": match.score,
             "speaker": speaker,
             "url": url,
