@@ -7,8 +7,7 @@
 [![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python&style=for-the-badge)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-High_Performance-009688?logo=fastapi&style=for-the-badge)](https://fastapi.tiangolo.com/)
 [![Pinecone](https://img.shields.io/badge/Vector_DB-Pinecone-red?style=for-the-badge)](https://www.pinecone.io/)
-[![OpenAI](https://img.shields.io/badge/LLM-GPT--4o-green?logo=openai&style=for-the-badge)](https://openai.com/)
-
+[![OpenAI](https://img.shields.io/badge/LLM-GPT--5--mini-green?logo=openai&style=for-the-badge)](https://openai.com/)
 ---
 
 ## 🚀 Live Demo
