@@ -299,7 +299,21 @@ def stats_endpoint():
         "overlap_ratio": OVERLAP_RATIO,
         "top_k": TOP_K
     }
-
+    
+@app.get("/api/prompt", include_in_schema=False)
+def prompt_help_handler():
+    return {
+        "error": "Method GET not allowed for this endpoint. Please use POST.",
+        "how_to_test": {
+            "step_1": "Go to the interactive API docs at /docs (append /docs to your URL)",
+            "step_2": "Find the green 'POST /api/prompt' section and click to expand it",
+            "step_3": "Click the 'Try it out' button on the right side",
+            "step_4": "In the Request body, enter your JSON: {\"question\": \"Your question here\"}",
+            "step_5": "Click the big blue 'Execute' button to send the request"
+        },
+        "link": "/docs"
+    }
+    
 @app.post("/api/prompt", response_model=QueryResponse)
 def prompt_endpoint(request: QueryRequest):
     if not index:
