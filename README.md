@@ -9,6 +9,23 @@
 [![Pinecone](https://img.shields.io/badge/Vector_DB-Pinecone-red?style=for-the-badge)](https://www.pinecone.io/)
 [![OpenAI](https://img.shields.io/badge/LLM-GPT--5--mini-green?logo=openai&style=for-the-badge)](https://openai.com/)
 ---
+Here is a short explanation in English for your `README.md`:
+
+-----
+
+### 📡 API Endpoints
+
+1.  **`POST /api/prompt`**
+
+      * **Purpose:** The main RAG endpoint. It processes your question, retrieves relevant context from Pinecone, and generates an answer.
+      * **How to test:** Since this is a POST request, use the Swagger UI at [/docs](https://www.google.com/search?q=https://ted-rag.vercel.app/docs). Locate `/api/prompt`, click **Try it out**, and send a JSON body with your `question`.
+
+2.  **`GET /api/stats`**
+
+      * **Purpose:** Returns the current system hyperparameters (chunk size, overlap ratio, and top-k).
+      * **Link:** [https://ted-rag.vercel.app/api/stats](https://www.google.com/search?q=https://ted-rag.vercel.app/api/stats)
+      * 
+---
 
 ## 🚀 Live Demo
 Experience the assistant in action:
