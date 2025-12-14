@@ -10,10 +10,11 @@ from openai import OpenAI
 # 1. Configuration & Constants
 # ---------------------------------------------------------
 INDEX_NAME = "ted-rag-index"
+# Using the models specified in the PDF/Assignment
 EMBEDDING_MODEL = "RPRTHPB-text-embedding-3-small"
 EMBEDDING_DIMENSIONS = 1536
 
-# RAG Parameters
+# RAG Parameters (Hyperparameters reported in /api/stats)
 TOP_K = 8
 MAX_CHUNK_SIZE = 512
 OVERLAP_RATIO = 0.2
@@ -21,10 +22,11 @@ OVERLAP_RATIO = 0.2
 # ---------------------------------------------------------
 # 2. Clients Setup
 # ---------------------------------------------------------
+# Ensure these environment variables are set in your Vercel deployment
 api_key_openai = os.environ.get("OPENAI_API_KEY")
 api_key_pinecone = os.environ.get("PINECONE_API_KEY")
 
-# LLMod.ai / OpenAI Client
+# Client for the specified LLM API (LLMod.ai)
 client = OpenAI(
     api_key=api_key_openai,
     base_url="https://api.llmod.ai/v1" 
@@ -52,8 +54,9 @@ class QueryRequest(BaseModel):
 class ContextItem(BaseModel):
     talk_id: str
     title: str
-    text: str
+    chunk: str   # Renamed from 'text' to 'chunk' to match PDF requirement
     score: float
+    # Optional extra metadata helpful for the frontend
     url: Optional[str] = None
     speaker: Optional[str] = None
     topics: Optional[str] = None
@@ -204,24 +207,19 @@ def read_root():
                     // 1. Display Text Answer
                     let answerHTML = data.response.replace(/\\n/g, '<br>');
 
-                    // 2. Video Embedding Logic (New!)
-                    // We check if we have context, take the first one, and format the URL for embedding.
+                    // 2. Video Embedding Logic
                     if (data.context && data.context.length > 0 && data.context[0].url) {
                         const topMatch = data.context[0];
                         let videoUrl = topMatch.url;
                         
                         // Convert standard TED URL to Embed URL
-                        // Standard: https://www.ted.com/talks/slug
-                        // Embed: https://embed.ted.com/talks/slug
                         if (videoUrl.includes("ted.com/talks")) {
                             videoUrl = videoUrl.replace("www.ted.com", "embed.ted.com");
-                            // Fallback if URL doesn't have www but has ted.com
                             if (!videoUrl.includes("embed.ted.com")) {
                                 videoUrl = videoUrl.replace("ted.com", "embed.ted.com");
                             }
                         }
 
-                        // Append Video Section to the answer box
                         answerHTML += `
                             <div class="video-section">
                                 <div class="video-header">
@@ -262,7 +260,7 @@ def read_root():
                                 <div class="chunk-info">
                                     ${speaker} &nbsp;|&nbsp; ${views} &nbsp;|&nbsp; ${date}
                                 </div>
-                                <div class="chunk-text">"...${ctx.text}..."</div>
+                                <div class="chunk-text">"...${ctx.chunk}..."</div>
                             `;
                             chunksList.appendChild(div);
                         });
@@ -292,6 +290,10 @@ def read_root():
 
 @app.get("/api/stats", response_model=StatsResponse)
 def stats_endpoint():
+    """
+    Returns the RAG system hyperparameters.
+    Strict JSON format required by assignment: chunk_size, overlap_ratio, top_k
+    """
     return {
         "chunk_size": MAX_CHUNK_SIZE,
         "overlap_ratio": OVERLAP_RATIO,
@@ -327,9 +329,12 @@ def prompt_endpoint(request: QueryRequest):
         meta = match.metadata
         
         # 1. Extract Text
+        # Note: Your metadata might call it 'chunk_text', 'text', or 'chunk'
         chunk_content = str(meta.get('chunk_text', ''))
         if not chunk_content:
-            chunk_content = str(meta.get('chunk', '')) # Fallback
+             chunk_content = str(meta.get('chunk', '')) # Fallback
+        if not chunk_content:
+             chunk_content = str(meta.get('text', '')) # Final Fallback
 
         # 2. Extract Metadata
         t_id = str(meta.get('talk_id', 'Unknown'))
@@ -357,10 +362,11 @@ Content: {chunk_content}
 """
         
         # 4. Populate Response List
+        # Important: Mapping content to 'chunk' key as per PDF requirements
         retrieved_chunks.append({
             "talk_id": t_id,
             "title": title,
-            "text": chunk_content,
+            "chunk": chunk_content, # Required key: 'chunk'
             "score": match.score,
             "speaker": speaker,
             "url": url,
@@ -370,11 +376,8 @@ Content: {chunk_content}
         })
 
     # D. Construct Prompts
-    system_prompt = """You are a TED Talk assistant. Answer strictly based on the provided TED context.
-- Use the metadata (Speaker, Date, Views) to provide specific and rich answers.
-- If asked for recommendations, consider 'Views' as a popularity metric.
-- If the answer is not in the context, say "I don't know based on the provided TED data."
-"""
+    # STRICTLY REQUIRED SYSTEM PROMPT from PDF Page 4
+    system_prompt = """You are a TED Talk assistant that answers questions strictly and only based on the TED dataset context provided to you (metadata and transcript passages). You must not use any external knowledge, the open internet, or information that is not explicitly contained in the retrieved context. If the answer cannot be determined from the provided context, respond: "I don't know based on the provided TED data." Always explain your answer using the given context, quoting or paraphrasing the relevant transcript or metadata when helpful."""
 
     user_prompt = f"""Analyze the provided TED Talk context chunks to answer the user's question.
 
