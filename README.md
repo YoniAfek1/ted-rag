@@ -24,7 +24,7 @@ Here is a short explanation in English for your `README.md`:
 
       * **Purpose:** Returns the current system hyperparameters (chunk size, overlap ratio, and top-k).
       * **Link:** [https://ted-rag.vercel.app/api/stats](https://www.google.com/search?q=https://ted-rag.vercel.app/api/stats)
-      * 
+    
 ---
 
 ## 🚀 Live Demo
