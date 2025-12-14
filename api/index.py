@@ -299,21 +299,40 @@ def stats_endpoint():
         "overlap_ratio": OVERLAP_RATIO,
         "top_k": TOP_K
     }
-    
-@app.get("/api/prompt", include_in_schema=False)
+
+# --- NEW: Helpful GET response for users accessing /api/prompt in browser ---
+@app.get("/api/prompt", include_in_schema=False, response_class=HTMLResponse)
 def prompt_help_handler():
-    return {
-        "error": "Method GET not allowed for this endpoint. Please use POST.",
-        "how_to_test": {
-            "step_1": "Go to the interactive API docs at /docs (append /docs to your URL)",
-            "step_2": "Find the green 'POST /api/prompt' section and click to expand it",
-            "step_3": "Click the 'Try it out' button on the right side",
-            "step_4": "In the Request body, enter your JSON: {\"question\": \"Your question here\"}",
-            "step_5": "Click the big blue 'Execute' button to send the request"
-        },
-        "link": "/docs"
-    }
-    
+    return """
+    <html>
+        <head>
+            <title>API Usage Helper</title>
+            <style>
+                body { font-family: sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; }
+                .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+                h2 { color: #e62b1e; }
+                code { background: #eee; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+                li { margin-bottom: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>⚠️ Method GET not allowed</h2>
+                <p>This endpoint requires a <strong>POST</strong> request with a JSON body.</p>
+                
+                <h3>How to test interactively:</h3>
+                <ol>
+                    <li>Go to the <a href="/docs">interactive API docs (/docs)</a>.</li>
+                    <li>Find the green <strong>POST /api/prompt</strong> section and click to expand it.</li>
+                    <li>Click the <strong>Try it out</strong> button on the right side.</li>
+                    <li>In the Request body, enter your JSON: <br><code>{"question": "Your question here"}</code></li>
+                    <li>Click the big blue <strong>Execute</strong> button to send the request.</li>
+                </ol>
+            </div>
+        </body>
+    </html>
+    """
+
 @app.post("/api/prompt", response_model=QueryResponse)
 def prompt_endpoint(request: QueryRequest):
     if not index:
